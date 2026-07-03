@@ -1,7 +1,8 @@
 This project is a custom Python-based verification tool for a RISC-V processor. It uses a TCP-based debug client to communicate directly with the hardware, allowing us to pause, resume, and inspect CPU registers in real-time, making automated testing much faster and more reliable.
 
 RISC-V Debug Client
-Hi! This repository houses the custom debug interface I've been building for our RISC-V processor project for my NSF research in the 2026 summer!
+
+This repository houses the custom debug interface I've been building for our RISC-V processor project for my NSF research in the 2026 summer!
 
 Why does this exist?
 Instead of relying on manual checks or slow, bloated debugging tools, I built this Python client to talk directly 
