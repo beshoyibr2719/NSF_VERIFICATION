@@ -24,3 +24,21 @@ I’ve included a simple test suite in the script—just run it, and it will aut
 I'm currently working on adding more registers and expanding our automated test coverage!
 
 Built for our hardware verification research—keeping it simple and effective.
+
+### Register Map
+
+| Register Name | DMI Address | Description |
+| `data`        | `0x04`   | Data register used to retrieve values (e.g., PC). |
+
+| `dmcontrol`   | `0x10`   | Used for processor control (Halt/Resume commands). |
+
+| `dmstatus`    | `0x11`   | Used to poll processor status (e.g., bit 9 for halted state).  |
+
+| `abstractcs`  | `0x16`   | Used to check for command errors and monitor the "busy" status.  |
+
+| `command` | `0x17`       | Used to send commands to the processor (e.g., reading GPRs/PC). |
+
+
+
+
+
