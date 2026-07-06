@@ -27,7 +27,8 @@ Built for our hardware verification research—keeping it simple and effective.
 
 ### Register Map
 
-| Register Name | DMI Address | Description |
+| Register Name | DMI Address | Description |                                     
+
 | `data`        | `0x04`   | Data register used to retrieve values (e.g., PC). |
 
 | `dmcontrol`   | `0x10`   | Used for processor control (Halt/Resume commands). |
