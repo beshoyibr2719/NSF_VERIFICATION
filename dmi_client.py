@@ -13,6 +13,23 @@ def recv_exactly(sock, n):
         data.extend(packet)
     return data
 
+def wait_for_halted(max_attempts=1000):
+    for i in range(max_attempts):
+        if (dmi_read(0x11) & (1 << 9)):
+            return True # Successfully halted
+        time.sleep(0.01) # Small delay to give the hardware breathing room
+    
+    # If the loop finishes without returning, it timed out
+    raise TimeoutError("Timed out waiting for processor to halt!")
+
+def wait_for_ready(max_attempts=1000):
+    for i in range(max_attempts):
+        # Bit 12 of abstractcs is 'busy'
+        if not (dmi_read(0x16) & (1 << 12)):
+            print("Processor successfully resumed!")
+            return True 
+        time.sleep(0.01)
+    raise TimeoutError("Timed out waiting for abstractcs 'busy' bit to clear!")
 
 # ── 1. CONNECT ──────────────────────────────────────────────────
 HOST = 'localhost'
@@ -47,9 +64,13 @@ def read_pc():
 
     # 2. Add a busy-wait check (Check 'abstractcs' register at 0x16)
     # Bit 12 of abstractcs is 'busy'. Wait while it is 1.
-    while (dmi_read(0x16) & (1 << 12)):
-        pass # Busy wait
 
+    try:
+        wait_for_ready()
+    except TimeoutError as e:
+        print(f"CRITICAL ERROR: {e}")
+        sock.close()
+        exit(1)
 
     # 3. CHECK FOR ERRORS
     # Read abstractcs (0x16) to check for errors
@@ -81,10 +102,15 @@ dmi_write(0x10, 0x80000001)
 time.sleep(0.1)  # Give it a moment to process
 
 # 2. Wait until dmstatus (0x11) shows the processor is actually halted
-# Bit 9 is typically the 'halted' bit 
+# Bit 9 is typically the 'halted' bit, if not after 1000 attempts, timed out
+try:
+    wait_for_halted()
+    print("Processor successfully halted!")
+except TimeoutError as e:
+    print(f"CRITICAL ERROR: {e}")
+    sock.close()
+    exit(1) # Stop the script immediately
 
-while not (dmi_read(0x11) & (1 << 9)):
-    pass  # Wait until the processor is halted
 
 # Verify that the processor actually halted
 status = dmi_read(0x11)
@@ -102,8 +128,6 @@ print(f"DM status register: 0x{val_before:08x}")
 print("Sending RESUME command...")
 dmi_write(0x10, 0x40000001)
 time.sleep(0.1)  # Give it a moment to process
-while (dmi_read(0x11) & (1 << 9)):
-    pass  # Wait until the processor is resumed
 
 # Verify that the processor is actually running (bit 9 is 0)
 status_post_resume = dmi_read(0x11)
@@ -119,8 +143,13 @@ print("Sending HALT command...")
 dmi_write(0x10, 0x80000001)
 time.sleep(0.1)  # Give it a moment to process
 
-while not (dmi_read(0x11) & (1 << 9)):
-    pass
+try:
+    wait_for_halted()
+    print("Processor successfully halted!")
+except TimeoutError as e:
+    print(f"CRITICAL ERROR: {e}")
+    sock.close()
+    exit(1) # Stop the script immediately
 print("Processor halted again for test suite!")
 
 # Verify halt after the second command
