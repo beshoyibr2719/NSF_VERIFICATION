@@ -86,6 +86,10 @@ time.sleep(0.1)  # Give it a moment to process
 while not (dmi_read(0x11) & (1 << 9)):
     pass  # Wait until the processor is halted
 
+# Verify that the processor actually halted
+status = dmi_read(0x11)
+verify_register("Halt State", (status >> 9) & 1, 1) # Expect bit 9 to be 1
+
 print("Processor successfully halted!")
 
 # Example: read the DM status register (DMI addr 0x10)
@@ -101,6 +105,11 @@ time.sleep(0.1)  # Give it a moment to process
 while (dmi_read(0x11) & (1 << 9)):
     pass  # Wait until the processor is resumed
 
+# Verify that the processor is actually running (bit 9 is 0)
+status_post_resume = dmi_read(0x11)
+verify_register("Resume State", (status_post_resume >> 9) & 1, 0)
+
+
 # Poll the status again to see if it changed
 new_val = dmi_read(0x11)
 print(f"Post-Resume DM status register: 0x{new_val:08x}")
@@ -114,7 +123,19 @@ while not (dmi_read(0x11) & (1 << 9)):
     pass
 print("Processor halted again for test suite!")
 
+# Verify halt after the second command
+status_rehalt = dmi_read(0x11)
+verify_register("Re-Halt State", (status_rehalt >> 9) & 1, 1)
+
+
 dmi_write(0x16, 0x00000700)
+
+# Verify error field (bits 8-10) is 0
+abs_status = dmi_read(0x16)
+err_field = (abs_status >> 8) & 0x7
+verify_register("AbstractCS Error Field", err_field, 0)
+
+
 # Define your test suite
 test_suite = [
     {"name": "DM Control", "addr": 0x10, "expected": 0x00000001},
