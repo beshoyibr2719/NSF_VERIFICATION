@@ -1,6 +1,9 @@
 import socket
 import struct
 import time
+import json
+
+# add JSON test suite loading HERE
 
 
 # Helper to ensure we get exactly N bytes from the socket
@@ -13,6 +16,7 @@ def recv_exactly(sock, n):
         data.extend(packet)
     return data
 
+# Functiion to wait for the processor to halt, with a timeout
 def wait_for_halted(max_attempts=1000):
     for i in range(max_attempts):
         if (dmi_read(0x11) & (1 << 9)):
@@ -22,6 +26,7 @@ def wait_for_halted(max_attempts=1000):
     # If the loop finishes without returning, it timed out
     raise TimeoutError("Timed out waiting for processor to halt!")
 
+# Function to wait for the processor to resume, with a timeout
 def wait_for_ready(max_attempts=1000):
     for i in range(max_attempts):
         # Bit 12 of abstractcs is 'busy'
