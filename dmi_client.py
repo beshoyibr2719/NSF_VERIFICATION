@@ -3,8 +3,6 @@ import struct
 import time
 import json
 
-# add JSON test suite loading HERE
-
 
 # Helper to ensure we get exactly N bytes from the socket
 def recv_exactly(sock, n):
@@ -88,6 +86,24 @@ def read_pc():
     # 4. Read the PC value from the data register (0x04)
     pc_val = dmi_read(0x04)
     return pc_val
+
+
+def read_abstract_reg(regno):
+    # 1. Write the command to 0x17 (Command Register)
+    # cmdtype (bits 24-31) = 0 (Access Register)
+    # regno (bits 0-15) = regno
+    cmd = 0x00000000 | (regno & 0xFFFF) 
+    dmi_write(0x17, cmd)
+    
+    # 2. Wait for completion (using your existing robust helper!)
+    try:
+        wait_for_ready()
+    except TimeoutError as e:
+        print(f"Error: {e}")
+        return None
+
+    # 3. Read the data from 0x04 (Data Register)
+    return dmi_read(0x04)
 
 # verify register values as we run!
 def verify_register(reg_name, actual_value, expected_value):
@@ -181,18 +197,42 @@ except FileNotFoundError:
 
 # Run the loop
 for test in test_suite:
-    # Special case: If it is the PC, use the new read function
-    # Note: We compare against the name, which works perfectly with JSON
-    if test["name"] == "Program Counter":
+    # Clean dispatch based on register range
+    # 0x1000 (4096) is the base for GPRs
+    if test["addr"] >= 4096:
+        actual = read_abstract_reg(test["addr"])
+    elif test["name"] == "Program Counter":
         actual = read_pc()
     else:
-        # test["addr"] is now the decimal value (e.g., 272) from JSON
         actual = dmi_read(test["addr"])
-
+    
     verify_register(test["name"], actual, test["expected"])
 
 
+# ── 5. INTERACTIVE INSPECTION (TEST MODE) ───────────────────────
+print("\n--- Interactive Debug Mode ---")
+print("Enter register ID (e.g., 4097 for x1, 4098 for x2) or 'q' to quit.")
 
-# ── 5. DISCONNECT ───────────────────────────────────────────────
+while True:
+    choice = input("Enter Register ID (or addr) or 'q' to quit: ")
+    if choice.lower() == 'q':
+        break
+    
+    try:
+        addr = int(choice)
+        # DECISION LOGIC:
+        # If it's a DMI register (0x10, 0x11, 0x16, 0x17)
+        if addr < 0x1000:
+            val = dmi_read(addr)
+            print(f"DMI Reg 0x{addr:02x} Value: 0x{val:08x}")
+        # If it's an Abstract/GPR register (x0-x31 are 0x1000+)
+        else:
+            val = read_abstract_reg(addr)
+            print(f"Abstract Reg 0x{addr:04x} Value: 0x{val:08x}")
+            
+    except ValueError:
+        print("Invalid input.")
+
+# ── 6. DISCONNECT ───────────────────────────────────────────────
 sock.close()
 print("Done")
