@@ -170,21 +170,28 @@ err_field = (abs_status >> 8) & 0x7
 verify_register("AbstractCS Error Field", err_field, 0)
 
 
-# Define your test suite
-test_suite = [
-    {"name": "DM Control", "addr": 0x10, "expected": 0x00000001},
-    {"name": "Program Counter", "addr": 0x04, "expected": None}
-]
+# ── 4. LOAD EXTERNAL TEST SUITE ─────────────────────────────────
+try:
+    with open('tests.json', 'r') as f:
+        test_suite = json.load(f)
+    print("Test suite loaded successfully.")
+except FileNotFoundError:
+    print("Error: tests.json not found!")
+    exit(1)
 
 # Run the loop
 for test in test_suite:
     # Special case: If it is the PC, use the new read function
+    # Note: We compare against the name, which works perfectly with JSON
     if test["name"] == "Program Counter":
         actual = read_pc()
     else:
+        # test["addr"] is now the decimal value (e.g., 272) from JSON
         actual = dmi_read(test["addr"])
 
     verify_register(test["name"], actual, test["expected"])
+
+
 
 # ── 5. DISCONNECT ───────────────────────────────────────────────
 sock.close()
