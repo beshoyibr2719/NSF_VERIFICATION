@@ -45,20 +45,42 @@ print("Connected to Flute debug server")
 # 7-byte request packet: op (1 byte) + addr (2 bytes) + data (4 bytes)
 # Response: 4 bytes of data
 
-def dmi_read(addr):
-    # op=1 (READ), addr=2 bytes, data=4 bytes (0 for read)
-    pkt = struct.pack('<BHI', 1, addr, 0)
-    sock.sendall(pkt)
-    # Use the helper to guarantee we get all 4 bytes
-    resp = recv_exactly(sock, 4)
-    return struct.unpack('<I', resp)[0]
+class DmiClient:
+    def __init__(self, host='localhost', port=30000, log_file="dmi_trace.log"):
+        self.sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+        self.sock.connect((host, port))
+        self.log = open(log_file, "w")
 
+    def read(self, addr):
+        pkt = struct.pack('<BHI', 1, addr, 0)
+        self.sock.sendall(pkt)
+        resp = recv_exactly(self.sock, 4)
+        val = struct.unpack('<I', resp)[0]
+        self.log.write(f"READ  0x{addr:02x} -> 0x{val:08x}\n")
+        return val
 
-def dmi_write(addr, data):
-    # 7-byte packet: op=2 (WRITE), addr = 2 bytes, data = 4 bytes
-    pkt = struct.pack('<BHI', 2, addr, data)
-    sock.sendall(pkt)
+    def write(self, addr, data):
+        pkt = struct.pack('<BHI', 2, addr, data)
+        self.sock.sendall(pkt)
+        self.log.write(f"WRITE 0x{addr:02x} <- 0x{data:08x}\n")
 
+    # NEW: Centralized command execution
+    def execute_abstract_cmd(self, cmd):
+        # 1. Clear cmderr field (write 1 to clear)
+        self.write(0x16, 0x00000700)
+        
+        # 2. Issue the command
+        self.write(0x17, cmd)
+        
+        # 3. Wait for busy bit to clear (using your existing wait_for_ready logic)
+        wait_for_ready()
+        
+        # 4. Verify no errors occurred
+        status = self.read(0x16)
+        if (status >> 8) & 0x7:
+            raise RuntimeError(f"Abstract command 0x{cmd:08x} failed with status 0x{status:08x}")
+
+            
 def read_pc():
     # 1. Write the command to read the PC (GPR register access)
     # The command 0x00220000 is for reading GRPs (x0-x31)
@@ -211,7 +233,7 @@ for test in test_suite:
 
 # ── 5. INTERACTIVE INSPECTION (TEST MODE) ───────────────────────
 print("\n--- Interactive Debug Mode ---")
-print("Enter register ID (e.g., 4097 for x1, 4098 for x2) or 'q' to quit.")
+print("Enter register ID (e.g., 272 (DMCONTROL), 4097 for x1, 4098 for x2) or 'q' to quit.")
 
 while True:
     choice = input("Enter Register ID (or addr) or 'q' to quit: ")
