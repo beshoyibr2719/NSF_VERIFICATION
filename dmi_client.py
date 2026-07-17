@@ -1,3 +1,5 @@
+# Author: Beshoy Ibrahim
+
 import socket
 import struct
 import time
@@ -80,7 +82,7 @@ class DmiClient:
         if (status >> 8) & 0x7:
             raise RuntimeError(f"Abstract command 0x{cmd:08x} failed with status 0x{status:08x}")
 
-            
+
 def read_pc():
     # 1. Write the command to read the PC (GPR register access)
     # The command 0x00220000 is for reading GRPs (x0-x31)
