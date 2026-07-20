@@ -1,0 +1,51 @@
+[
+  {
+    "timestamp": "2026-07-20T10:50:44.041358",
+    "register": "Halt State",
+    "actual": "0x1",
+    "expected": "0x1",
+    "pass": true
+  },
+  {
+    "timestamp": "2026-07-20T10:50:44.141644",
+    "register": "Resume State",
+    "actual": "0x0",
+    "expected": "0x0",
+    "pass": true
+  },
+  {
+    "timestamp": "2026-07-20T10:50:44.241993",
+    "register": "Re-Halt State",
+    "actual": "0x1",
+    "expected": "0x1",
+    "pass": true
+  },
+  {
+    "timestamp": "2026-07-20T10:50:44.282775",
+    "register": "AbstractCS Error Field",
+    "actual": "0x0",
+    "expected": "0x0",
+    "pass": true
+  },
+  {
+    "timestamp": "2026-07-20T10:50:44.282942",
+    "register": "DM Control",
+    "actual": "0x1",
+    "expected": "0x1",
+    "pass": true
+  },
+  {
+    "timestamp": "2026-07-20T10:50:44.323836",
+    "register": "Program Counter",
+    "actual": "0x1000",
+    "expected": "observe-only",
+    "pass": true
+  },
+  {
+    "timestamp": "2026-07-20T10:50:44.364830",
+    "register": "Return Address",
+    "actual": "0x1000",
+    "expected": "observe-only",
+    "pass": true
+  }
+]
